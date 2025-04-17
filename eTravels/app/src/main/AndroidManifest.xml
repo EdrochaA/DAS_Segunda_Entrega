@@ -30,5 +30,8 @@
         <activity
             android:name=".ui.RegisterActivity"
             android:exported="true" />
+        <activity
+            android:name=".ui.ProfileActivity"
+            android:exported="true"/>
     </application>
 </manifest>
