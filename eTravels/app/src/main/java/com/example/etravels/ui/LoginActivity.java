@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,13 +29,12 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        etUsername = findViewById(R.id.etUsername);
-        etPassword = findViewById(R.id.etPassword);
-        btnLogin   = findViewById(R.id.btnLogin);
-        tvRegister = findViewById(R.id.tvRegister);
+        etUsername  = findViewById(R.id.etUsername);
+        etPassword  = findViewById(R.id.etPassword);
+        btnLogin    = findViewById(R.id.btnLogin);
+        tvRegister  = findViewById(R.id.tvRegister);
 
         btnLogin.setOnClickListener(v -> loginUser());
-
         tvRegister.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
             finish();
@@ -52,26 +50,30 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        ApiService apiService = RetrofitClient.getInstance().create(ApiService.class);
-        Call<LoginResponse> call = apiService.loginUser(username, password);
+        ApiService api = RetrofitClient.getInstance().create(ApiService.class);
+        Call<LoginResponse> call = api.loginUser(username, password);
         call.enqueue(new Callback<LoginResponse>() {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    LoginResponse body = response.body();
-                    if (body.isSuccess()) {
-                        // ← CAMBIO: en lugar de solo hacer Toast + finish, redirigimos a ProfileActivity
-                        Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
-                        intent.putExtra(ProfileActivity.EXTRA_NAME,  body.getName());   // ← CAMBIO
-                        intent.putExtra(ProfileActivity.EXTRA_PHONE, body.getPhone());  // ← CAMBIO
-                        intent.putExtra(ProfileActivity.EXTRA_EMAIL, body.getEmail());  // ← CAMBIO
-                        startActivity(intent);
-                        finish();
-                    } else {
-                        showErrorDialog("Error en el login", body.getMessage());
-                    }
+                if (!response.isSuccessful()) {
+                    showErrorDialog("Error HTTP: " + response.code(), "No se pudo conectar con el servidor.");
+                    return;
+                }
+                LoginResponse body = response.body();
+                if (body == null) {
+                    showErrorDialog("Error", "Respuesta vacía del servidor.");
+                    return;
+                }
+                if (body.isSuccess()) {
+                    Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
+                    intent.putExtra(ProfileActivity.EXTRA_NAME,     username);
+                    intent.putExtra(ProfileActivity.EXTRA_PHONE,    body.getPhone());
+                    intent.putExtra(ProfileActivity.EXTRA_EMAIL,    body.getEmail());
+                    intent.putExtra(ProfileActivity.EXTRA_PHOTO_URL, body.getPhotoUrl());
+                    startActivity(intent);
+                    finish();
                 } else {
-                    showErrorDialog("Error", "No se pudo conectar con el servidor.");
+                    showErrorDialog("Error en el login", body.getMessage());
                 }
             }
 
@@ -83,7 +85,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void showErrorDialog(String title, String message) {
-        new AlertDialog.Builder(this)
+        new AlertDialog.Builder(LoginActivity.this)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton("Aceptar", null)

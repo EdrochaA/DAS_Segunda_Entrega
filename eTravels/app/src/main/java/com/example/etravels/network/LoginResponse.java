@@ -6,13 +6,12 @@ public class LoginResponse {
     private boolean success;
     private String message;
 
-    // Nuevos campos para el perfil
-    @SerializedName("name")
-    private String name;
-    @SerializedName("phone")
+    // Datos de perfil devueltos por login.php
     private String phone;
-    @SerializedName("email")
     private String email;
+
+    @SerializedName("foto")
+    private String photoUrl;
 
     public boolean isSuccess() {
         return success;
@@ -22,16 +21,15 @@ public class LoginResponse {
         return message;
     }
 
-    // Getters para los nuevos campos
-    public String getName() {
-        return name;
-    }
-
     public String getPhone() {
         return phone;
     }
 
     public String getEmail() {
         return email;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
     }
 }
