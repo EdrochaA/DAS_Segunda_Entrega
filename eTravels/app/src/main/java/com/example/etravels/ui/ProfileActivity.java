@@ -35,8 +35,8 @@ public class ProfileActivity extends AppCompatActivity {
     public static final String EXTRA_EMAIL     = "extra_email";
     public static final String EXTRA_PHOTO_URL = "extra_photo_url";
 
-    private static final String PREFS_NAME     = "prefs";
-    private static final String PREF_PHOTO_URL = "prefs_photo_url";
+    private static final String PREFS_NAME       = "prefs";
+    private static final String PREF_PHOTO_URL   = "prefs_photo_url";
 
     private ImageView imgUserIcon;
     private TextView  tvName, tvPhone, tvEmail;
@@ -48,7 +48,7 @@ public class ProfileActivity extends AppCompatActivity {
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                            Bundle extras   = result.getData().getExtras();
+                            Bundle extras    = result.getData().getExtras();
                             Bitmap thumbnail = (Bitmap) extras.get("data");
                             imgUserIcon.setImageBitmap(thumbnail);
                             uploadImageToServer(thumbnail);
@@ -78,20 +78,24 @@ public class ProfileActivity extends AppCompatActivity {
         tvPhone     = findViewById(R.id.tvPhone);
         tvEmail     = findViewById(R.id.tvEmail);
 
-        Intent intent = getIntent();
-        username        = intent.getStringExtra(EXTRA_NAME);
-        String phone    = intent.getStringExtra(EXTRA_PHONE);
-        String email    = intent.getStringExtra(EXTRA_EMAIL);
-        initialPhotoUrl = intent.getStringExtra(EXTRA_PHOTO_URL);
+        Intent intent         = getIntent();
+        username              = intent.getStringExtra(EXTRA_NAME);
+        String phone          = intent.getStringExtra(EXTRA_PHONE);
+        String email          = intent.getStringExtra(EXTRA_EMAIL);
+        initialPhotoUrl       = intent.getStringExtra(EXTRA_PHOTO_URL);
 
         tvName.setText(username);
         tvPhone.setText("Teléfono: " + phone);
-        tvEmail.setText("Email: "   + email);
+        tvEmail.setText("Email: " + email);
 
-        // Carga la última URL guardada en prefs si no viene en el Intent
+        // Carga la última URL guardada en prefs (distinta por usuario)
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String urlFromPrefs    = prefs.getString(PREF_PHOTO_URL, null);
-        String urlToLoad       = initialPhotoUrl != null ? initialPhotoUrl : urlFromPrefs;
+        String urlFromPrefs     = prefs.getString(PREF_PHOTO_URL + "_" + username, null);
+
+        // Decidimos qué URL usar: la que venga del login o la guardada localmente
+        String urlToLoad = (initialPhotoUrl != null && !initialPhotoUrl.isEmpty())
+                ? initialPhotoUrl
+                : urlFromPrefs;
 
         if (urlToLoad != null && !urlToLoad.isEmpty()) {
             Glide.with(this)
@@ -99,6 +103,8 @@ public class ProfileActivity extends AppCompatActivity {
                     .placeholder(R.drawable.usuario)
                     .error(R.drawable.usuario)
                     .into(imgUserIcon);
+        } else {
+            imgUserIcon.setImageResource(R.drawable.usuario);
         }
 
         imgUserIcon.setOnClickListener(v -> {
@@ -134,10 +140,10 @@ public class ProfileActivity extends AppCompatActivity {
                     GenericResponse body = resp.body();
                     if (body.isSuccess()) {
                         String imageUrl = body.getUrl();
-                        // Guardamos la URL en prefs
+                        // Guardamos la URL en prefs, única por usuario
                         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                                 .edit()
-                                .putString(PREF_PHOTO_URL, imageUrl)
+                                .putString(PREF_PHOTO_URL + "_" + username, imageUrl)
                                 .apply();
                         // Cargamos la imagen subida con Glide
                         Glide.with(ProfileActivity.this)
