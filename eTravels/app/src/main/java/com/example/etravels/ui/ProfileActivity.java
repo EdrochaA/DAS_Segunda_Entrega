@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.util.Base64;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -35,14 +36,14 @@ public class ProfileActivity extends AppCompatActivity {
     public static final String EXTRA_EMAIL     = "extra_email";
     public static final String EXTRA_PHOTO_URL = "extra_photo_url";
 
-    private static final String PREFS_NAME       = "prefs";
-    private static final String PREF_PHOTO_URL   = "prefs_photo_url";
+    private static final String PREFS_NAME     = "prefs";
+    private static final String PREF_PHOTO_URL = "prefs_photo_url";
 
     private ImageView imgUserIcon;
     private TextView  tvName, tvPhone, tvEmail;
+    private Button    btnBack;
     private String    username, initialPhotoUrl;
 
-    // Lanzador para capturar la foto con la app de cámara
     private final ActivityResultLauncher<Intent> takePictureLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
@@ -58,7 +59,6 @@ public class ProfileActivity extends AppCompatActivity {
                     }
             );
 
-    // Lanzador para pedir permiso de cámara
     private final ActivityResultLauncher<String> permissionLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.RequestPermission(),
@@ -77,25 +77,24 @@ public class ProfileActivity extends AppCompatActivity {
         tvName      = findViewById(R.id.tvName);
         tvPhone     = findViewById(R.id.tvPhone);
         tvEmail     = findViewById(R.id.tvEmail);
+        btnBack     = findViewById(R.id.btnBack);
 
-        Intent intent         = getIntent();
-        username              = intent.getStringExtra(EXTRA_NAME);
-        String phone          = intent.getStringExtra(EXTRA_PHONE);
-        String email          = intent.getStringExtra(EXTRA_EMAIL);
-        initialPhotoUrl       = intent.getStringExtra(EXTRA_PHOTO_URL);
+        Intent intent    = getIntent();
+        username         = intent.getStringExtra(EXTRA_NAME);
+        String phone     = intent.getStringExtra(EXTRA_PHONE);
+        String email     = intent.getStringExtra(EXTRA_EMAIL);
+        initialPhotoUrl  = intent.getStringExtra(EXTRA_PHOTO_URL);
 
         tvName.setText(username);
         tvPhone.setText("Teléfono: " + phone);
         tvEmail.setText("Email: " + email);
 
-        // Carga la última URL guardada en prefs (distinta por usuario)
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String urlFromPrefs     = prefs.getString(PREF_PHOTO_URL + "_" + username, null);
-
-        // Decidimos qué URL usar: la que venga del login o la guardada localmente
-        String urlToLoad = (initialPhotoUrl != null && !initialPhotoUrl.isEmpty())
-                ? initialPhotoUrl
-                : urlFromPrefs;
+        String urlFromPrefs    = prefs.getString(PREF_PHOTO_URL + "_" + username, null);
+        String urlToLoad       =
+                (initialPhotoUrl != null && !initialPhotoUrl.isEmpty())
+                        ? initialPhotoUrl
+                        : urlFromPrefs;
 
         if (urlToLoad != null && !urlToLoad.isEmpty()) {
             Glide.with(this)
@@ -115,6 +114,8 @@ public class ProfileActivity extends AppCompatActivity {
                 permissionLauncher.launch(Manifest.permission.CAMERA);
             }
         });
+
+        btnBack.setOnClickListener(v -> finish());
     }
 
     private void openCamera() {
@@ -123,15 +124,11 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void uploadImageToServer(@NonNull Bitmap bitmap) {
-        // Convierte a Base64
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
         String base64Image = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
 
-        ApiService api = RetrofitClient
-                .getInstance()
-                .create(ApiService.class);
-
+        ApiService api = RetrofitClient.getInstance().create(ApiService.class);
         Call<GenericResponse> call = api.uploadProfileImage(username, base64Image);
         call.enqueue(new Callback<GenericResponse>() {
             @Override
@@ -140,12 +137,11 @@ public class ProfileActivity extends AppCompatActivity {
                     GenericResponse body = resp.body();
                     if (body.isSuccess()) {
                         String imageUrl = body.getUrl();
-                        // Guardamos la URL en prefs, única por usuario
                         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                                 .edit()
                                 .putString(PREF_PHOTO_URL + "_" + username, imageUrl)
                                 .apply();
-                        // Cargamos la imagen subida con Glide
+
                         Glide.with(ProfileActivity.this)
                                 .load(imageUrl)
                                 .placeholder(R.drawable.usuario)

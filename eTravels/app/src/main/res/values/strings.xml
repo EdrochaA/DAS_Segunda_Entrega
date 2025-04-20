@@ -3,4 +3,6 @@
     <string name="empty_string"></string>
     <string name="profile_description">Perfil de usuario</string>
     <string name="user_icon">Icono de Usuario</string>
+    <string name="close">Cerrar mapa</string>
+    <string name="profile_icon">Icono de perfil</string>
 </resources>

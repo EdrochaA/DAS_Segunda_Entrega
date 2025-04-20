@@ -65,7 +65,7 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
                 if (body.isSuccess()) {
-                    Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
+                    Intent intent = new Intent(LoginActivity.this, MapActivity.class);
                     intent.putExtra(ProfileActivity.EXTRA_NAME,     username);
                     intent.putExtra(ProfileActivity.EXTRA_PHONE,    body.getPhone());
                     intent.putExtra(ProfileActivity.EXTRA_EMAIL,    body.getEmail());
