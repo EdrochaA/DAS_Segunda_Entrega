@@ -5,50 +5,56 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Icono de perfil a la izquierda, bajado 100dp -->
+    <!-- Icono de perfil -->
     <ImageView
         android:id="@+id/imgProfile"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:src="@drawable/perfil"
-        android:contentDescription="@string/profile_icon"
         android:layout_marginTop="50dp"
         android:layout_marginStart="16dp"
+        android:contentDescription="@string/profile_icon"
+        android:src="@drawable/perfil"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- Título eTravels centrado y más grande -->
+    <!-- Título -->
     <TextView
         android:id="@+id/tvTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
         android:text="eTravels"
         android:textSize="56sp"
         android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginTop="16dp"
         app:layout_constraintTop_toBottomOf="@id/imgProfile"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Contenedor cuadrado para la imagen del “mapa” -->
     <androidx.cardview.widget.CardView
+        android:id="@+id/cardMap"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="24dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintDimensionRatio="1:1"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <org.osmdroid.views.MapView
-            android:id="@+id/mapView"
+        <!-- Imagen estática del mapa con ID imgMap -->
+        <ImageView
+            android:id="@+id/imgMap"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-
+            android:layout_height="match_parent"
+            android:clickable="true"
+            android:focusable="true"
+            android:scaleType="centerCrop"
+            android:src="@drawable/map"/>
     </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

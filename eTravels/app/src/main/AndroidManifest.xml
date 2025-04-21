@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.example.etravels">
@@ -13,7 +12,6 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.CAMERA" />
-
 
     <application
         android:allowBackup="true"
@@ -33,10 +31,19 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.RegisterActivity" android:exported="false" />
-        <activity android:name=".ui.ProfileActivity"  android:exported="false" />
+        <activity android:name=".ui.RegisterActivity"
+            android:exported="false" />
 
-        <activity android:name=".ui.MapActivity"      android:exported="false" />
+        <activity android:name=".ui.ProfileActivity"
+            android:exported="false" />
+
+        <activity android:name=".ui.MapActivity"
+            android:exported="false" />
+
+        <!-- Añade esta línea para registrar FullMapActivity -->
+        <activity
+            android:name=".ui.FullMapActivity"
+            android:exported="false" />
 
     </application>
 </manifest>
