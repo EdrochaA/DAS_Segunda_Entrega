@@ -12,14 +12,14 @@ import com.example.etravels.R;
 
 public class MapActivity extends AppCompatActivity {
     private ImageView imgProfile, imgMap;
-    private String name, phone, email, photoUrl;
-    private int    userId;
+    private String    name, phone, email, photoUrl;
+    private int       userId;
 
+    // Launcher to open FullMapActivity and optionally receive data back
     private final ActivityResultLauncher<Intent> fullMapLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
-                        // Si FullMapActivity pasa datos de vuelta, los recuperas aquí
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                             Intent data = result.getData();
                             name     = data.getStringExtra(ProfileActivity.EXTRA_NAME);
@@ -36,7 +36,7 @@ public class MapActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        // Recoge datos del Intent (desde LoginActivity)
+        // Read login info from the Intent
         Intent intent = getIntent();
         userId   = intent.getIntExtra(ProfileActivity.EXTRA_ID,    -1);
         name     = intent.getStringExtra(ProfileActivity.EXTRA_NAME);
@@ -47,6 +47,7 @@ public class MapActivity extends AppCompatActivity {
         imgProfile = findViewById(R.id.imgProfile);
         imgMap     = findViewById(R.id.imgMap);
 
+        // Go to Profile screen
         imgProfile.setOnClickListener(v -> {
             Intent i = new Intent(this, ProfileActivity.class);
             i.putExtra(ProfileActivity.EXTRA_ID,        userId);
@@ -57,6 +58,7 @@ public class MapActivity extends AppCompatActivity {
             startActivity(i);
         });
 
+        // Go to Full‑screen map
         imgMap.setOnClickListener(v -> {
             Intent i = new Intent(this, FullMapActivity.class);
             i.putExtra(ProfileActivity.EXTRA_ID,        userId);

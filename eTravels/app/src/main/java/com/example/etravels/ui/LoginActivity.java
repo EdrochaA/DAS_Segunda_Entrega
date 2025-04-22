@@ -1,6 +1,7 @@
 package com.example.etravels.ui;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -24,16 +25,39 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnLogin;
     private TextView tvRegister;
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 1) Comprobar si hay sesión activa
+        SharedPreferences prefs = getSharedPreferences("SessionPrefs", MODE_PRIVATE);
+        boolean isLoggedIn = prefs.getBoolean("isLoggedIn", false);
+        if (isLoggedIn) {
+            String name     = prefs.getString("name", "");
+            String email    = prefs.getString("email", "");
+            String phone    = prefs.getString("phone", "");
+            int    userId   = prefs.getInt("userId", -1);
+            String photoUrl = prefs.getString("photoUrl", "");
+
+            // Saltar al mapa directamente
+            Intent intent = new Intent(LoginActivity.this, MapActivity.class);
+            intent.putExtra(ProfileActivity.EXTRA_NAME,      name);
+            intent.putExtra(ProfileActivity.EXTRA_PHONE,     phone);
+            intent.putExtra(ProfileActivity.EXTRA_EMAIL,     email);
+            intent.putExtra(ProfileActivity.EXTRA_PHOTO_URL, photoUrl);
+            intent.putExtra(ProfileActivity.EXTRA_ID,        userId);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        // 2) Si no hay sesión, mostrar pantalla de login
         setContentView(R.layout.activity_login);
 
-        etUsername  = findViewById(R.id.etUsername);
-        etPassword  = findViewById(R.id.etPassword);
-        btnLogin    = findViewById(R.id.btnLogin);
-        tvRegister  = findViewById(R.id.tvRegister);
+        etUsername = findViewById(R.id.etUsername);
+        etPassword = findViewById(R.id.etPassword);
+        btnLogin   = findViewById(R.id.btnLogin);
+        tvRegister = findViewById(R.id.tvRegister);
 
         btnLogin.setOnClickListener(v -> loginUser());
         tvRegister.setOnClickListener(v -> {
@@ -57,7 +81,8 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<LoginResponse> call, Response<LoginResponse> response) {
                 if (!response.isSuccessful()) {
-                    showErrorDialog("Error HTTP: " + response.code(), "No se pudo conectar con el servidor.");
+                    showErrorDialog("Error HTTP: " + response.code(),
+                            "No se pudo conectar con el servidor.");
                     return;
                 }
                 LoginResponse body = response.body();
@@ -66,12 +91,24 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
                 if (body.isSuccess()) {
+                    // 3) Guardar en SharedPreferences la sesión iniciada
+                    SharedPreferences prefs = getSharedPreferences("SessionPrefs", MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+                    editor.putBoolean("isLoggedIn", true);
+                    editor.putString("name", username);
+                    editor.putString("email", body.getEmail());
+                    editor.putString("phone", body.getPhone());
+                    editor.putInt("userId", body.getId());
+                    editor.putString("photoUrl", body.getPhotoUrl());
+                    editor.apply();
+
+                    // 4) Lanzar MapActivity
                     Intent intent = new Intent(LoginActivity.this, MapActivity.class);
-                    intent.putExtra(ProfileActivity.EXTRA_NAME,     username);
-                    intent.putExtra(ProfileActivity.EXTRA_PHONE,    body.getPhone());
-                    intent.putExtra(ProfileActivity.EXTRA_EMAIL,    body.getEmail());
+                    intent.putExtra(ProfileActivity.EXTRA_NAME,      username);
+                    intent.putExtra(ProfileActivity.EXTRA_PHONE,     body.getPhone());
+                    intent.putExtra(ProfileActivity.EXTRA_EMAIL,     body.getEmail());
                     intent.putExtra(ProfileActivity.EXTRA_PHOTO_URL, body.getPhotoUrl());
-                    intent.putExtra(ProfileActivity.EXTRA_ID, body.getId());
+                    intent.putExtra(ProfileActivity.EXTRA_ID,        body.getId());
                     startActivity(intent);
                     finish();
                 } else {

@@ -35,8 +35,7 @@ public class ProfileActivity extends AppCompatActivity {
     public static final String EXTRA_PHONE     = "extra_phone";
     public static final String EXTRA_EMAIL     = "extra_email";
     public static final String EXTRA_PHOTO_URL = "extra_photo_url";
-    public static final String EXTRA_ID = "extra_id";
-
+    public static final String EXTRA_ID        = "extra_id";
 
     private static final String PREFS_NAME     = "prefs";
     private static final String PREF_PHOTO_URL = "prefs_photo_url";
@@ -118,51 +117,96 @@ public class ProfileActivity extends AppCompatActivity {
         });
 
         btnBack.setOnClickListener(v -> finish());
+
+        // ——— Nuevo botón de Cerrar sesión ———
+        Button btnLogout = findViewById(R.id.btnLogout);
+        btnLogout.setOnClickListener(v -> {
+            // Borrar solo SharedPreferences de sesión
+            SharedPreferences sessionPrefs =
+                    getSharedPreferences("SessionPrefs", MODE_PRIVATE);
+            sessionPrefs.edit().clear().apply();
+
+            // Volver a LoginActivity limpiando toda la pila
+            Intent logoutIntent = new Intent(ProfileActivity.this, LoginActivity.class);
+            logoutIntent.setFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK |
+                            Intent.FLAG_ACTIVITY_CLEAR_TASK
+            );
+            startActivity(logoutIntent);
+            finish();
+        });
     }
 
     private void openCamera() {
-        Intent intent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
+        Intent intent = new Intent(
+                android.provider.MediaStore.ACTION_IMAGE_CAPTURE
+        );
         takePictureLauncher.launch(intent);
     }
 
     private void uploadImageToServer(@NonNull Bitmap bitmap) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-        String base64Image = Base64.encodeToString(stream.toByteArray(), Base64.DEFAULT);
+        String base64Image = Base64.encodeToString(
+                stream.toByteArray(),
+                Base64.DEFAULT
+        );
 
         ApiService api = RetrofitClient.getInstance().create(ApiService.class);
-        Call<GenericResponse> call = api.uploadProfileImage(username, base64Image);
+        Call<GenericResponse> call = api.uploadProfileImage(
+                username, base64Image
+        );
         call.enqueue(new Callback<GenericResponse>() {
             @Override
-            public void onResponse(Call<GenericResponse> call, Response<GenericResponse> resp) {
+            public void onResponse(
+                    Call<GenericResponse> call,
+                    Response<GenericResponse> resp
+            ) {
                 if (resp.isSuccessful() && resp.body() != null) {
                     GenericResponse body = resp.body();
                     if (body.isSuccess()) {
                         String imageUrl = body.getUrl();
                         getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                                 .edit()
-                                .putString(PREF_PHOTO_URL + "_" + username, imageUrl)
-                                .apply();
+                                .putString(
+                                        PREF_PHOTO_URL + "_" + username,
+                                        imageUrl
+                                ).apply();
 
                         Glide.with(ProfileActivity.this)
                                 .load(imageUrl)
                                 .placeholder(R.drawable.usuario)
                                 .error(R.drawable.usuario)
                                 .into(imgUserIcon);
-                        Toast.makeText(ProfileActivity.this, "Foto subida", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(
+                                ProfileActivity.this,
+                                "Foto subida",
+                                Toast.LENGTH_SHORT
+                        ).show();
                     } else {
-                        Toast.makeText(ProfileActivity.this, "Error: " + body.getMessage(),
-                                Toast.LENGTH_LONG).show();
+                        Toast.makeText(
+                                ProfileActivity.this,
+                                "Error: " + body.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show();
                     }
                 } else {
-                    Toast.makeText(ProfileActivity.this, "Error al conectar",
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(
+                            ProfileActivity.this,
+                            "Error al conectar",
+                            Toast.LENGTH_LONG
+                    ).show();
                 }
             }
             @Override
-            public void onFailure(Call<GenericResponse> call, Throwable t) {
-                Toast.makeText(ProfileActivity.this, "Fallo: " + t.getMessage(),
-                        Toast.LENGTH_LONG).show();
+            public void onFailure(
+                    Call<GenericResponse> call, Throwable t
+            ) {
+                Toast.makeText(
+                        ProfileActivity.this,
+                        "Fallo: " + t.getMessage(),
+                        Toast.LENGTH_LONG
+                ).show();
             }
         });
     }

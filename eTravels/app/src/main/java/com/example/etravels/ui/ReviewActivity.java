@@ -1,9 +1,7 @@
 package com.example.etravels.ui;
 
-import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,6 +11,7 @@ import com.example.etravels.network.ApiService;
 import com.example.etravels.network.GenericResponse;
 import com.example.etravels.network.RetrofitClient;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
@@ -72,7 +71,7 @@ public class ReviewActivity extends AppCompatActivity {
     /** Comprueba en Nominatim que la dirección existe antes de grabar */
     private void validateAddress(String address, Runnable onSuccess) {
         String url = "https://nominatim.openstreetmap.org/search?"
-                + "q=" + Uri.encode(address)
+                + "q="   + Uri.encode(address)
                 + "&format=json&limit=1";
         Request req = new Request.Builder()
                 .url(url)
@@ -80,24 +79,27 @@ public class ReviewActivity extends AppCompatActivity {
                 .build();
 
         nominatim.newCall(req).enqueue(new okhttp3.Callback() {
-            @Override
-            public void onFailure(okhttp3.Call call, IOException e) {
+            @Override public void onFailure(okhttp3.Call call, IOException e) {
                 runOnUiThread(() ->
                         Toast.makeText(ReviewActivity.this,
-                                "Error validando dirección", Toast.LENGTH_SHORT).show()
+                                "Error validando dirección",
+                                Toast.LENGTH_SHORT).show()
                 );
             }
-            @Override
-            public void onResponse(okhttp3.Call call, okhttp3.Response resp) throws IOException {
+            @Override public void onResponse(okhttp3.Call call, okhttp3.Response resp) throws IOException {
                 if (!resp.isSuccessful()) return;
-                JsonArray arr = JsonParser.parseString(resp.body().string())
-                        .getAsJsonArray();
+                String body = resp.body().string();
+                JsonArray arr = JsonParser.parseString(body).getAsJsonArray();
                 runOnUiThread(() -> {
                     if (arr.isEmpty()) {
                         Toast.makeText(ReviewActivity.this,
                                 "Dirección no encontrada. Vuelva a introducirla.",
                                 Toast.LENGTH_LONG).show();
                     } else {
+                        // Extraer y actualizar lat/lon
+                        JsonObject place = arr.get(0).getAsJsonObject();
+                        lat = place.get("lat").getAsDouble();
+                        lon = place.get("lon").getAsDouble();
                         onSuccess.run();
                     }
                 });
@@ -112,11 +114,11 @@ public class ReviewActivity extends AppCompatActivity {
                 usuario, title, address, comment, lat, lon
         );
         call.enqueue(new Callback<GenericResponse>() {
-            @Override
-            public void onResponse(Call<GenericResponse> call, Response<GenericResponse> resp) {
+            @Override public void onResponse(Call<GenericResponse> call, Response<GenericResponse> resp) {
                 if (resp.isSuccessful() && resp.body() != null && resp.body().isSuccess()) {
                     Toast.makeText(ReviewActivity.this,
-                            "Reseña guardada", Toast.LENGTH_SHORT).show();
+                            "Reseña guardada",
+                            Toast.LENGTH_SHORT).show();
                     setResult(RESULT_OK);
                     finish();
                 } else {
@@ -124,13 +126,14 @@ public class ReviewActivity extends AppCompatActivity {
                             ? resp.body().getMessage()
                             : "HTTP " + resp.code();
                     Toast.makeText(ReviewActivity.this,
-                            "Error: " + msg, Toast.LENGTH_LONG).show();
+                            "Error: " + msg,
+                            Toast.LENGTH_LONG).show();
                 }
             }
-            @Override
-            public void onFailure(Call<GenericResponse> call, Throwable t) {
+            @Override public void onFailure(Call<GenericResponse> call, Throwable t) {
                 Toast.makeText(ReviewActivity.this,
-                        "Fallo de red: " + t.getMessage(), Toast.LENGTH_LONG).show();
+                        "Fallo de red: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
             }
         });
     }

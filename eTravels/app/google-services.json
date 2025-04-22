@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "198394004787",
+    "project_id": "etravels-2703d",
+    "storage_bucket": "etravels-2703d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198394004787:android:70c1bb1d7a7937b19eea46",
+        "android_client_info": {
+          "package_name": "com.example.etravels"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeVO1hlaPML47JB4kV1fSke8eJpCKRdBA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
