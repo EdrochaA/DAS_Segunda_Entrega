@@ -151,7 +151,7 @@ public class FullMapActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     mapView.getOverlays().clear();
 
-                    // Contador de cuántas reseñas hay en cada lat,lon exacto
+                    // Objeto contador para cada "lat,lon"
                     Map<String, Integer> contador = new HashMap<>();
 
                     for (Review r : resp.body()) {
@@ -161,17 +161,20 @@ public class FullMapActivity extends AppCompatActivity {
                         int n = contador.getOrDefault(key, 0);
                         contador.put(key, n + 1);
 
-                        // si ya hay al menos una, desplazamos
+                        double nuevoLat = lat;
+                        double nuevoLon = lon;
+
                         if (n > 0) {
-                            // radio de 0.0001 grados (~11 m)
-                            double radio = 0.0001;
-                            // ángulo en radianes: separado cada uno 45°
-                            double angulo = Math.toRadians(n * 45);
-                            lat += radio * Math.sin(angulo);
-                            lon += radio * Math.cos(angulo);
+                            // Base de 0.0001° (~11 m)
+                            double baseRadio = 0.00050;
+                            // Radio aumenta con n
+                            double radio = baseRadio * (n + 1);
+                            double angulo = Math.toRadians((n - 1) * 45 % 360);
+                            nuevoLat += radio * Math.sin(angulo);
+                            nuevoLon += radio * Math.cos(angulo);
                         }
 
-                        GeoPoint p = new GeoPoint(lat, lon);
+                        GeoPoint p = new GeoPoint(nuevoLat, nuevoLon);
                         addMarker(p, r.getTitulo() + "\n" + r.getUsuario(), true);
                     }
 
@@ -181,6 +184,7 @@ public class FullMapActivity extends AppCompatActivity {
             @Override public void onFailure(Call<List<Review>> call, Throwable t) { }
         });
     }
+
 
 
     private void addMarker(GeoPoint point, String title, boolean red) {
