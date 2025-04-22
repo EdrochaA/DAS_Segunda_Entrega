@@ -1,5 +1,6 @@
 package com.example.etravels.ui;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -19,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.content.res.AppCompatResources;
 import androidx.appcompat.widget.SearchView;
+import androidx.core.content.ContextCompat;
 
 import com.example.etravels.R;
 import com.example.etravels.network.ApiService;
@@ -34,6 +36,8 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.MapController;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -53,9 +57,12 @@ public class FullMapActivity extends AppCompatActivity {
     private OkHttpClient http = new OkHttpClient();
 
     private String username;
-    private double selectedLat = 43.2620, selectedLon = -2.9340;
+    private double selectedLat = 0, selectedLon = 0;
     private boolean hasRetried = false;
 
+    private MyLocationNewOverlay locationOverlay;
+
+    // For starting ReviewActivity
     private final ActivityResultLauncher<Intent> reviewLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
@@ -67,12 +74,25 @@ public class FullMapActivity extends AppCompatActivity {
                     }
             );
 
+    // For location permission
+    private final ActivityResultLauncher<String> locPermLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.RequestPermission(),
+                    granted -> {
+                        if (granted) {
+                            enableMyLocationOverlay();
+                        } else {
+                            Toast.makeText(this, "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Configurar osmdroid
+        // osmdroid config
         Configuration.getInstance()
                 .setUserAgentValue(getPackageName());
         Configuration.getInstance()
@@ -80,44 +100,43 @@ public class FullMapActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_full_map);
 
-        // Recuperar usuario logueado
-        username = getIntent().getStringExtra(ProfileActivity.EXTRA_NAME);
+        // Logged user
+        username     = getIntent().getStringExtra(ProfileActivity.EXTRA_NAME);
 
         mapView      = findViewById(R.id.mapView);
         svSearch     = findViewById(R.id.svSearch);
         btnNewReview = findViewById(R.id.btnNewReview);
         btnBack      = findViewById(R.id.btnBack);
 
-        // Inicializar el mapa
+        // Initialize map
         mapView.setTileSource(TileSourceFactory.MAPNIK);
         mapView.setMultiTouchControls(true);
-        MapController ctrl = (MapController) mapView.getController();
-        ctrl.setZoom(18.0);
-        GeoPoint start = new GeoPoint(selectedLat, selectedLon);
-        ctrl.setCenter(start);
-        addMarker(start, "Inicio", false);
+        mapView.getController().setZoom(18.0);
 
-        // Cargar reseñas existentes
+        // Request location permission / enable overlay
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == getPackageManager().PERMISSION_GRANTED) {
+            enableMyLocationOverlay();
+        } else {
+            locPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        // Load existing reviews
         loadReviews();
 
-        // Expandir SearchView al tocar cualquier parte del cuadro
+        // Expand SearchView on touch
         svSearch.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP) {
-                // Primero, dispara el click accesible
                 v.performClick();
-                // Después, abre el SearchView
                 svSearch.setIconified(false);
                 svSearch.requestFocus();
             }
-            // devolvemos false para que siga procesando normalmente
             return false;
         });
 
-
-        // Buscar al enviar texto
+        // Search on submit
         svSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
+            @Override public boolean onQueryTextSubmit(String query) {
                 hasRetried = false;
                 searchLocation(query.trim());
                 svSearch.clearFocus();
@@ -128,7 +147,7 @@ public class FullMapActivity extends AppCompatActivity {
             }
         });
 
-        // Botón “Nueva reseña”
+        // New review button
         btnNewReview.setOnClickListener(v -> {
             Intent i = new Intent(this, ReviewActivity.class);
             i.putExtra(ProfileActivity.EXTRA_NAME, username);
@@ -137,8 +156,26 @@ public class FullMapActivity extends AppCompatActivity {
             reviewLauncher.launch(i);
         });
 
-        // Botón “Volver”
+        // Back button
         btnBack.setOnClickListener(v -> finish());
+    }
+
+    private void enableMyLocationOverlay() {
+        locationOverlay = new MyLocationNewOverlay(
+                new GpsMyLocationProvider(this),
+                mapView
+        );
+        locationOverlay.enableMyLocation();
+        mapView.getOverlays().add(locationOverlay);
+
+        locationOverlay.runOnFirstFix(() -> runOnUiThread(() -> {
+            GeoPoint loc = locationOverlay.getMyLocation();
+            if (loc != null) {
+                selectedLat = loc.getLatitude();
+                selectedLon = loc.getLongitude();
+                mapView.getController().setCenter(loc);
+            }
+        }));
     }
 
     private void loadReviews() {
@@ -150,8 +187,9 @@ public class FullMapActivity extends AppCompatActivity {
                 if (!resp.isSuccessful() || resp.body() == null) return;
                 runOnUiThread(() -> {
                     mapView.getOverlays().clear();
-
-                    // Objeto contador para cada "lat,lon"
+                    if (locationOverlay != null) {
+                        mapView.getOverlays().add(locationOverlay); // re-add overlay
+                    }
                     Map<String, Integer> contador = new HashMap<>();
 
                     for (Review r : resp.body()) {
@@ -161,23 +199,41 @@ public class FullMapActivity extends AppCompatActivity {
                         int n = contador.getOrDefault(key, 0);
                         contador.put(key, n + 1);
 
-                        double nuevoLat = lat;
-                        double nuevoLon = lon;
-
-                        if (n > 0) {
-                            // Base de 0.0001° (~11 m)
-                            double baseRadio = 0.00050;
-                            // Radio aumenta con n
-                            double radio = baseRadio * (n + 1);
-                            double angulo = Math.toRadians((n - 1) * 45 % 360);
-                            nuevoLat += radio * Math.sin(angulo);
-                            nuevoLon += radio * Math.cos(angulo);
-                        }
+                        double baseRadio = 0.00050;
+                        double radio     = (n > 0) ? baseRadio * (n + 1) : 0;
+                        double angulo    = Math.toRadians(((n - 1) * 45) % 360);
+                        double nuevoLat  = lat + radio * Math.sin(angulo);
+                        double nuevoLon  = lon + radio * Math.cos(angulo);
 
                         GeoPoint p = new GeoPoint(nuevoLat, nuevoLon);
-                        addMarker(p, r.getTitulo() + "\n" + r.getUsuario(), true);
-                    }
+                        Marker marker = new Marker(mapView);
+                        marker.setPosition(p);
+                        marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                        marker.setTitle(r.getTitulo());
 
+                        // red icon 48dp
+                        Drawable d = AppCompatResources.getDrawable(
+                                FullMapActivity.this, R.drawable.ic_marker_red);
+                        int sizePx = (int)(48 * getResources().getDisplayMetrics().density);
+                        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bmp);
+                        d.setBounds(0,0,sizePx,sizePx);
+                        d.draw(canvas);
+                        marker.setIcon(new BitmapDrawable(getResources(), bmp));
+
+                        marker.setOnMarkerClickListener((m, map) -> {
+                            Intent i = new Intent(FullMapActivity.this,
+                                    ReviewDetailActivity.class);
+                            i.putExtra("titulo",     r.getTitulo());
+                            i.putExtra("usuario",    r.getUsuario());
+                            i.putExtra("direccion",  r.getDireccion());
+                            i.putExtra("comentario", r.getComentario());
+                            startActivity(i);
+                            return true;
+                        });
+
+                        mapView.getOverlays().add(marker);
+                    }
                     mapView.invalidate();
                 });
             }
@@ -185,34 +241,8 @@ public class FullMapActivity extends AppCompatActivity {
         });
     }
 
-
-
-    private void addMarker(GeoPoint point, String title, boolean red) {
-        if (!red) return;   // <-- aquí cortas cualquier llamada con false
-
-        Marker m = new Marker(mapView);
-        m.setPosition(point);
-        m.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-        m.setTitle(title);
-
-        // Dibujar pin rojo escalado...
-        Drawable d = AppCompatResources.getDrawable(this, R.drawable.ic_marker_red);
-        int sizePx = (int) TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, 48, getResources().getDisplayMetrics());
-        Bitmap bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-        d.setBounds(0,0,sizePx,sizePx);
-        d.draw(canvas);
-        m.setIcon(new BitmapDrawable(getResources(), bmp));
-
-        mapView.getOverlays().add(m);
-    }
-
-
-
     private void searchLocation(String texto) {
         if (texto.isEmpty()) return;
-
         String url = "https://nominatim.openstreetmap.org/search?"
                 + "q=" + Uri.encode(texto)
                 + "&format=json&limit=1&countrycodes=es";
@@ -222,16 +252,14 @@ public class FullMapActivity extends AppCompatActivity {
                 .build();
 
         http.newCall(req).enqueue(new okhttp3.Callback() {
-            @Override
-            public void onFailure(okhttp3.Call call, IOException e) {
+            @Override public void onFailure(okhttp3.Call call, IOException e) {
                 runOnUiThread(() ->
                         Toast.makeText(FullMapActivity.this,
                                 "Error en búsqueda", Toast.LENGTH_SHORT).show()
                 );
             }
-
-            @Override
-            public void onResponse(okhttp3.Call call, okhttp3.Response resp) throws IOException {
+            @Override public void onResponse(okhttp3.Call call, okhttp3.Response resp)
+                    throws IOException {
                 if (!resp.isSuccessful()) return;
                 String body = resp.body().string();
                 JsonArray arr = JsonParser.parseString(body).getAsJsonArray();
@@ -239,22 +267,20 @@ public class FullMapActivity extends AppCompatActivity {
                     hasRetried = true;
                     runOnUiThread(() ->
                             Toast.makeText(FullMapActivity.this,
-                                    "No encontrado \"" + texto + "\"", Toast.LENGTH_SHORT).show());
+                                    "No encontrado \"" + texto + "\"",
+                                    Toast.LENGTH_SHORT).show()
+                    );
                     return;
                 }
                 if (!arr.isEmpty()) {
                     JsonObject place = arr.get(0).getAsJsonObject();
                     selectedLat = place.get("lat").getAsDouble();
                     selectedLon = place.get("lon").getAsDouble();
-                    String disp = place.has("display_name")
-                            ? place.get("display_name").getAsString()
-                            : texto;
                     runOnUiThread(() -> {
                         MapController c = (MapController) mapView.getController();
                         GeoPoint p = new GeoPoint(selectedLat, selectedLon);
                         c.setCenter(p);
                         c.setZoom(18.0);
-                        mapView.getOverlays().clear();
                         loadReviews();
                     });
                 }
@@ -266,11 +292,13 @@ public class FullMapActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         mapView.onResume();
+        if (locationOverlay != null) locationOverlay.enableMyLocation();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         mapView.onPause();
+        if (locationOverlay != null) locationOverlay.disableMyLocation();
     }
 }
