@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Mapa a pantalla completa -->
+    <!-- Mapa full screen -->
     <org.osmdroid.views.MapView
         android:id="@+id/mapView"
         android:layout_width="0dp"
@@ -15,6 +15,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- SearchView bajada -->
     <androidx.appcompat.widget.SearchView
         android:id="@+id/svSearch"
         android:layout_width="0dp"
@@ -22,7 +23,6 @@
         android:iconifiedByDefault="false"
         android:focusable="true"
         android:focusableInTouchMode="true"
-        android:clickable="true"
         android:queryHint="Buscar calle o lugar…"
         android:background="@android:color/white"
         android:layout_marginStart="16dp"
@@ -32,14 +32,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Botón “Nueva reseña” -->
+    <Button
+        android:id="@+id/btnNewReview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Nueva reseña"
+        android:layout_marginTop="8dp"
+        app:layout_constraintTop_toBottomOf="@id/svSearch"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- Botón “Volver” centrado abajo -->
+    <!-- Botón Volver -->
     <Button
         android:id="@+id/btnBack"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Volver"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="58dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>

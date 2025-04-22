@@ -35,6 +35,8 @@ public class ProfileActivity extends AppCompatActivity {
     public static final String EXTRA_PHONE     = "extra_phone";
     public static final String EXTRA_EMAIL     = "extra_email";
     public static final String EXTRA_PHOTO_URL = "extra_photo_url";
+    public static final String EXTRA_ID = "extra_id";
+
 
     private static final String PREFS_NAME     = "prefs";
     private static final String PREF_PHOTO_URL = "prefs_photo_url";

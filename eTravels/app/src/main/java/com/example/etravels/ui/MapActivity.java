@@ -7,28 +7,26 @@ import android.widget.ImageView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 
 import com.example.etravels.R;
 
 public class MapActivity extends AppCompatActivity {
-    private ImageView imgProfile;
-    private ImageView imgMap;
-
+    private ImageView imgProfile, imgMap;
     private String name, phone, email, photoUrl;
+    private int    userId;
 
-    // Lanzador para recibir el resultado de FullMapActivity
-    private ActivityResultLauncher<Intent> fullMapLauncher =
+    private final ActivityResultLauncher<Intent> fullMapLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
+                        // Si FullMapActivity pasa datos de vuelta, los recuperas aquí
                         if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                             Intent data = result.getData();
-                            // Recupera los datos actualizados al volver de FullMapActivity
                             name     = data.getStringExtra(ProfileActivity.EXTRA_NAME);
                             phone    = data.getStringExtra(ProfileActivity.EXTRA_PHONE);
                             email    = data.getStringExtra(ProfileActivity.EXTRA_EMAIL);
                             photoUrl = data.getStringExtra(ProfileActivity.EXTRA_PHOTO_URL);
+                            userId   = data.getIntExtra(ProfileActivity.EXTRA_ID, userId);
                         }
                     }
             );
@@ -38,8 +36,9 @@ public class MapActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
-        // Recoge los extras pasados desde LoginActivity o ProfileActivity
+        // Recoge datos del Intent (desde LoginActivity)
         Intent intent = getIntent();
+        userId   = intent.getIntExtra(ProfileActivity.EXTRA_ID,    -1);
         name     = intent.getStringExtra(ProfileActivity.EXTRA_NAME);
         phone    = intent.getStringExtra(ProfileActivity.EXTRA_PHONE);
         email    = intent.getStringExtra(ProfileActivity.EXTRA_EMAIL);
@@ -48,9 +47,9 @@ public class MapActivity extends AppCompatActivity {
         imgProfile = findViewById(R.id.imgProfile);
         imgMap     = findViewById(R.id.imgMap);
 
-        // Click en el icono de perfil: abre ProfileActivity
         imgProfile.setOnClickListener(v -> {
-            Intent i = new Intent(MapActivity.this, ProfileActivity.class);
+            Intent i = new Intent(this, ProfileActivity.class);
+            i.putExtra(ProfileActivity.EXTRA_ID,        userId);
             i.putExtra(ProfileActivity.EXTRA_NAME,      name);
             i.putExtra(ProfileActivity.EXTRA_PHONE,     phone);
             i.putExtra(ProfileActivity.EXTRA_EMAIL,     email);
@@ -58,9 +57,9 @@ public class MapActivity extends AppCompatActivity {
             startActivity(i);
         });
 
-        // Click en la imagen del mapa: abre FullMapActivity a pantalla completa
         imgMap.setOnClickListener(v -> {
-            Intent i = new Intent(MapActivity.this, FullMapActivity.class);
+            Intent i = new Intent(this, FullMapActivity.class);
+            i.putExtra(ProfileActivity.EXTRA_ID,        userId);
             i.putExtra(ProfileActivity.EXTRA_NAME,      name);
             i.putExtra(ProfileActivity.EXTRA_PHONE,     phone);
             i.putExtra(ProfileActivity.EXTRA_EMAIL,     email);

@@ -1,8 +1,11 @@
 package com.example.etravels.network;
 
+import java.util.List;
+
 import retrofit2.Call;
 import retrofit2.http.Field;
 import retrofit2.http.FormUrlEncoded;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
 
 public interface ApiService {
@@ -41,5 +44,19 @@ public interface ApiService {
     Call<GenericResponse> uploadProfileImage(
             @Field("name")   String name,
             @Field("imagen") String imagen
+    );
+
+    @GET("getReviews.php")
+    Call<List<Review>> getAllReviews();
+
+    @FormUrlEncoded
+    @POST("addReview.php")
+    Call<GenericResponse> addReview(
+            @Field("usuario")   String usuario,
+            @Field("titulo")    String titulo,
+            @Field("direccion") String direccion,
+            @Field("comentario")String comentario,
+            @Field("lat")       double lat,
+            @Field("lon")       double lon
     );
 }

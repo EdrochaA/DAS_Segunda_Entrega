@@ -9,6 +9,7 @@ public class LoginResponse {
     // Datos de perfil devueltos por login.php
     private String phone;
     private String email;
+    private int id;
 
     @SerializedName("foto")
     private String photoUrl;
@@ -32,4 +33,6 @@ public class LoginResponse {
     public String getPhotoUrl() {
         return photoUrl;
     }
+
+    public int    getId()       { return id; }
 }

@@ -24,6 +24,7 @@ public class LoginActivity extends AppCompatActivity {
     private Button btnLogin;
     private TextView tvRegister;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +71,7 @@ public class LoginActivity extends AppCompatActivity {
                     intent.putExtra(ProfileActivity.EXTRA_PHONE,    body.getPhone());
                     intent.putExtra(ProfileActivity.EXTRA_EMAIL,    body.getEmail());
                     intent.putExtra(ProfileActivity.EXTRA_PHOTO_URL, body.getPhotoUrl());
+                    intent.putExtra(ProfileActivity.EXTRA_ID, body.getId());
                     startActivity(intent);
                     finish();
                 } else {
